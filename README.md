@@ -6,8 +6,6 @@
 ![VibeFlow Screenshot](https://github.com/ming2025/VibeFlow/blob/main/screenshot.png)
 
 
-[👉 **在线直接使用 / Live Demo**](https://ming2025.github.io/VibeFlow/)
-
 ---
 
 ## 📖 简介 (Introduction)
@@ -26,7 +24,7 @@
 
 ## 🚀 快速开始 (Quick Start)
 
-1.  **访问工具**：打开 [在线版本](https://ming2025.github.io/VibeFlow/) 或下载本项目中的 `index.html` 本地打开。
+1.  **访问工具**：下载本项目中的 `index.html` 本地打开。
 2.  **加载示例**：点击工具栏的 `Import`，选择 `examples` 文件夹下的 `vibe_workflow.json` (Mini-Canva 开发流) 体验全流程。
 3.  **创建你的流**：
     - 双击空白处新建节点。
