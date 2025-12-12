@@ -3,7 +3,7 @@
 > **不要只做 AI 的提问者，做指挥 AI 分工协作的架构师。**
 > Don't just prompt; Architect the flow.
 
-![VibeFlow Screenshot](https://via.placeholder.com/800x400?text=Place+Your+Screenshot+Here)
+![VibeFlow Screenshot](https://github.com/ming2025/VibeFlow/blob/main/screenshot.png)
 
 
 [👉 **在线直接使用 / Live Demo**](https://ming2025.github.io/VibeFlow/)
