@@ -1,0 +1,68 @@
+{
+  "id": "proj_1765415763047",
+  "title": "景区文创商店数据分析可视化 (方案B: 游客旅程与商品IQ)",
+  "updatedAt": 1765543636312,
+  "nodes": [
+    {
+      "id": "node-init-data-01",
+      "x": 100,
+      "y": 100,
+      "title": "01. 数据探查与架构定义 (Data Schema)",
+      "status": "doing",
+      "context": "项目启动。已获取三份CSV文件：\n1. `客流数据.csv` (日期, 入馆人数)\n2. `收银明细.csv` (交易时间, 条码, 数量, 金额)\n3. `商品库存.csv` (条码, 品名, 库存数量, 进价)\n\n我们需要定义前端数据处理的数据结构，以便后续计算方案B的核心指标。",
+      "prompt": "你现在是**数据架构师**。请分析上传的三个文件结构，定义一个 JavaScript 对象结构 `StoreData`，用于在前端存储清洗后的数据。\n\n我们需要以下结构：\n1. `dailyStats`: 按日期索引的对象，包含当日客流、当日总销售额、当日订单数。\n2. `hourlyStats`: 按“日期-小时”索引的对象（例如 '2024-10-01-14'），用于存储该小时的销售笔数和金额（用于热力图）。\n3. `productMetrics`: 按商品条码（SKU）索引的对象，包含：\n   - `totalSales`: 月销售总额\n   - `totalQty`: 月销售总量\n   - `inventory`: 当前库存量\n   - `daysOnShelf`: 上架天数（默认为30天或根据最早销售时间计算）\n   - `velocity`: 销售速度 (日均销量)\n   - `status`: 根据四象限逻辑计算出的状态 ('畅销缺货', '滞销积压' 等)\n\n请输出这个数据结构的定义文档和字段说明。",
+      "next": [
+        "node-eng-02"
+      ]
+    },
+    {
+      "id": "node-eng-02",
+      "x": 550,
+      "y": 100,
+      "title": "02. 核心数据清洗逻辑 (Data Engineering)",
+      "status": "doing",
+      "context": "数据结构已定义。现在需要编写 JavaScript 代码来解析 CSV 并填充上述结构。",
+      "prompt": "你现在是**数据工程师 (Data Engineer)**。请编写核心的 JavaScript 函数 `processData(trafficCSV, salesCSV, inventoryCSV)`。\n\n**功能要求：**\n1. 使用 `PapaParse` 解析三个 CSV String。\n2. **客流处理**：读取 `客流数据.csv`，建立日期到客流数的映射。\n3. **销售处理**：遍历 `收银明细.csv`。\n   - 解析 `交易时间` (e.g., '2024-10-01 15:29:50') 提取出 日期 和 小时。\n   - 聚合计算每小时的销售额和订单数。\n   - 聚合计算每个 `条码` 的总销量和总销售额。\n4. **库存关联**：遍历 `商品库存.csv`，将库存数量关联到 `productMetrics` 中。\n5. **指标计算**：\n   - 计算 `salesVelocity` (销售速度) = 总销量 / 30 (假设数据为月度)。\n   - 计算 `inventoryTurnoverDays` (预估售罄天数) = 库存数量 / 销售速度。\n\n请提供完整的 JS 代码块，重点展示数据合并与清洗的逻辑。",
+      "next": [
+        "node-algo-03"
+      ]
+    },
+    {
+      "id": "node-algo-03",
+      "x": 1000,
+      "y": 100,
+      "title": "03. 策略算法与象限分析 (Algorithm & Analysis)",
+      "status": "todo",
+      "context": "基础数据已清洗完毕。现在需要实现方案B中的深度分析逻辑，特别是“商品IQ”四象限分类和高层摘要生成。",
+      "prompt": "你现在是**高级数据分析师 (Data Analyst)**。请编写用于生成分析结论的 JS 逻辑函数。\n\n**任务 1：商品IQ四象限分类**\n对每个商品进行标记：\n- **明星商品 (Cash Cow):** 销量高 (Top 20%) && 库存充足。\n- **急需补货 (Restock Needed):** 销量高 (Top 20%) && 库存 < (日均销量 * 7)。 -> *这是关键行动点*\n- **滞销积压 (Dead Stock):** 销量低 (Bottom 50%) && 库存 > 10。\n- **普通商品:** 其他。\n\n**任务 2：高层摘要生成器 (Executive Summary)**\n编写一个函数 `generateSummary(stats)`，返回一句话字符串。逻辑示例：\n- 如果 `周末转化率` < `平日转化率` -> 输出“周末客流充足但转化率偏低，建议加强现场引导。”\n- 如果 `急需补货商品数` > 10 -> 输出“注意！有超过10款热销商品面临缺货风险。”\n\n请提供实现这两个逻辑的 JavaScript 代码。",
+      "next": [
+        "node-viz-04"
+      ]
+    },
+    {
+      "id": "node-viz-04",
+      "x": 1450,
+      "y": 100,
+      "title": "04. 可视化看板实现 (Visualization)",
+      "status": "doing",
+      "context": "数据和算法逻辑已就绪。现在需要用 ECharts 将其可视化。",
+      "prompt": "你现在是**前端可视化专家 (FE Visualization Specialist)**。我们需要实现三个核心图表的 ECharts 配置 (`option`)。\n\n1.  **时段热力图 (Hourly Heatmap):**\n    - X轴：09:00 - 22:00 (营业时间)\n    - Y轴：日期 (10月1日 - 10月31日)\n    - Value：该小时的销售笔数（体现“忙碌程度”）。\n    - VisualMap：从浅蓝到深红。\n\n2.  **商品IQ散点图 (Product IQ Scatter):**\n    - X轴：库存数量 (Log axis 建议，防数据倾斜)\n    - Y轴：销售速度 (件/天)\n    - 气泡大小：销售总金额\n    - 颜色：根据“象限分类”着色 (红=急需补货, 绿=健康, 灰=滞销)。\n    - Tooltip：显示商品名称、当前库存、建议行动。\n\n3.  **Top 5 行动清单 (Action List):**\n    - 不用图表，用 HTML 表格渲染。\n    - 表1：急需补货 Top 5 (按销量降序)。\n    - 表2：建议清仓 Top 5 (按库存降序且无销量)。\n\n请提供生成这些 `option` 配置对象的 JS 代码。",
+      "next": [
+        "node-final-05"
+      ]
+    },
+    {
+      "id": "node-final-05",
+      "x": 1900,
+      "y": 100,
+      "title": "05. 整体集成与交付 (Final Integration)",
+      "status": "done",
+      "context": "所有模块代码已准备好。",
+      "prompt": "作为**技术负责人**，请将上述所有 JavaScript 代码 (CSV解析、清洗逻辑、算法逻辑、ECharts配置) 封装到一个完整的 HTML 文件中。\n\n**HTML 结构要求：**\n1.  **Header:** 标题“景区文创商店经营驾驶舱”，下方显示由 JS 生成的“高层摘要”跑马灯或高亮文本。\n2.  **Controls:** 三个文件上传按钮 (`<input type='file'>`)。\n3.  **KPI Cards:** 顶部横排展示：总营收、全月转化率、客单价。\n4.  **Main Layout:** \n    - 左侧：时段热力图 (占据 60% 宽度)。\n    - 右侧：Top 5 补货 & Top 5 清仓列表。\n    - 下方：商品IQ 散点图 (全宽)。\n5.  **Style:** 使用深色背景 (Dark Mode)，文字白色，图表配色使用鲜艳的对比色。\n\n请输出最终的 HTML 完整代码，确保用户直接打开即可使用。",
+      "next": []
+    }
+  ],
+  "panX": -50,
+  "panY": 8.090906839021613,
+  "scale": 1
+}

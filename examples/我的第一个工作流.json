@@ -1,0 +1,68 @@
+{
+  "id": "proj_1765179227515",
+  "title": "我的第一个工作流",
+  "updatedAt": 1765287873411,
+  "nodes": [
+    {
+      "id": "n-ila58281b",
+      "x": 100,
+      "y": 100,
+      "title": "01. Context & Goal (起手式)",
+      "status": "done",
+      "context": "[在此处简述项目目标、核心功能需求、用户群体和设计风格]\n\n",
+      "prompt": "[在此处填写让AI生成PRD的提示词，例如：作为产品经理，请根据上述背景撰写详细的PRD...]\n\n\n",
+      "next": [
+        "n-gg3r3u3h4"
+      ]
+    },
+    {
+      "id": "n-gg3r3u3h4",
+      "x": 550,
+      "y": 100,
+      "title": "02. Product Strategy (PRD)",
+      "status": "todo",
+      "context": "[此处粘贴 AI 生成的 PRD 文档内容...]\n\n",
+      "prompt": "[在此处填写让AI进行设计规范定义的提示词，例如：基于这份PRD，作为设计总监，请定义VI规范和UI布局...]\n\n\n",
+      "next": [
+        "n-1n3is4oua"
+      ]
+    },
+    {
+      "id": "n-1n3is4oua",
+      "x": 1000,
+      "y": 100,
+      "title": "03. Visual Design (VI System)",
+      "status": "todo",
+      "context": "[此处粘贴 AI 生成的 CSS 变量和 UI 布局描述...]\n\n",
+      "prompt": "[在此处填写让AI进行逻辑架构设计的提示词，例如：现在进入开发阶段，请编写核心JS模块的骨架...]\n\n\n",
+      "next": [
+        "n-fo6qatqmt"
+      ]
+    },
+    {
+      "id": "n-fo6qatqmt",
+      "x": 1450,
+      "y": 100,
+      "title": "04. Logic Architecture (Dev)",
+      "status": "todo",
+      "context": "[此处粘贴 AI 生成的 JS 逻辑骨架...]\n\n",
+      "prompt": "[在此处填写让AI进行代码整合的提示词，例如：请将所有内容整合，编写最终的单文件HTML代码...]\n\n\n",
+      "next": [
+        "n-nnk2pf2kk"
+      ]
+    },
+    {
+      "id": "n-nnk2pf2kk",
+      "x": 1900,
+      "y": 100,
+      "title": "05. Final Implementation (Code)",
+      "status": "todo",
+      "context": "",
+      "prompt": "",
+      "next": []
+    }
+  ],
+  "panX": -21,
+  "panY": 148,
+  "scale": 1
+}

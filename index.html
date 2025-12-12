@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Coding OS: Pro Workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212; --grid-color: #252525; --node-bg: #1e1e1e; --node-border: #333;
+            --node-header-bg: #252525; --text-main: #e0e0e0; --text-sub: #aaaaaa;
+            --accent-orange: #FF4F00; --code-bg: #2d2d2d; --port-color: #777;
+            --line-color: #555; --sidebar-bg: #181818; --sidebar-border: #333;
+            --header-min-height: 40px; --sidebar-width: 360px;
+            --item-hover: #2a2a2a; --item-active: #332200;
+        }
+        body.light-theme {
+            --bg-color: #f0f2f5; --grid-color: #e0e0e0; --node-bg: #ffffff; --node-border: #d1d5db;
+            --node-header-bg: #f3f4f6; --text-main: #1f2937; --text-sub: #6b7280;
+            --accent-orange: #ea580c; --code-bg: #f9fafb; --port-color: #9ca3af;
+            --line-color: #9ca3af; --sidebar-bg: #ffffff; --sidebar-border: #e5e7eb;
+            --item-hover: #f3f4f6; --item-active: #fff7ed;
+        }
+        body { margin: 0; overflow: hidden; background-color: var(--bg-color); font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); user-select: none; transition: background-color 0.3s, color 0.3s; }
+
+        #app-container { display: flex; width: 100vw; height: 100vh; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* 左侧侧边栏 */
+        #sidebar {
+            width: var(--sidebar-width); height: 100%; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border);
+            display: flex; flex-direction: column; z-index: 200; box-shadow: 5px 0 20px rgba(0,0,0,0.1);
+            margin-left: 0; transition: margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1); flex-shrink: 0;
+            position: relative; /* 为内部绝对定位做参照 */
+        }
+        #sidebar.collapsed { margin-left: calc(var(--sidebar-width) * -1); }
+
+        .sidebar-tabs { display: flex; border-bottom: 1px solid var(--sidebar-border); background: var(--node-header-bg); padding-left: 40px; /* 留出按钮空间 */ }
+        .sidebar-tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text-sub); border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .sidebar-tab:hover { color: var(--text-main); background: rgba(255,255,255,0.02); }
+        .sidebar-tab.active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
+
+        .sidebar-views { flex: 1; position: relative; overflow: hidden; }
+        .sidebar-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s ease; background: var(--sidebar-bg); }
+        .sidebar-view.active { transform: translateX(0); }
+
+        .project-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .project-item { 
+            padding: 12px 15px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; 
+            display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; border: 1px solid transparent;
+        }
+        .project-item:hover { background: var(--item-hover); }
+        .project-item.active { background: var(--item-active); border-color: var(--accent-orange); }
+        .project-info { flex: 1; overflow: hidden; }
+        .project-title { font-size: 0.9rem; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .project-date { font-size: 0.75rem; color: var(--text-sub); margin-top: 3px; }
+        .project-actions { opacity: 0; display: flex; gap: 5px; }
+        .project-item:hover .project-actions { opacity: 1; }
+        .mini-btn { padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--text-sub); cursor: pointer; }
+        .mini-btn:hover { color: var(--accent-orange); background: var(--node-bg); }
+
+        .search-box { padding: 15px; border-bottom: 1px solid var(--sidebar-border); }
+        .search-input { width: 100%; padding: 8px 12px; background: var(--code-bg); border: 1px solid var(--sidebar-border); border-radius: 6px; color: var(--text-main); outline: none; }
+        .search-input:focus { border-color: var(--accent-orange); }
+
+        #markdown-editor {
+            flex: 1; background: var(--code-bg); color: var(--text-main); border: none; resize: none; padding: 20px;
+            font-family: 'Consolas', monospace; font-size: 0.85rem; line-height: 1.6; outline: none; white-space: pre-wrap;
+        }
+
+        .sidebar-footer { padding: 15px 20px; background: var(--node-header-bg); border-top: 1px solid var(--sidebar-border); display: flex; flex-direction: column; gap: 10px; }
+        .storage-bar-bg { width: 100%; height: 4px; background: var(--sidebar-border); border-radius: 2px; overflow: hidden; }
+        .storage-bar-fill { height: 100%; background: var(--accent-orange); width: 0%; transition: width 0.5s; }
+        .storage-text { font-size: 0.75rem; color: var(--text-sub); display: flex; justify-content: space-between; margin-bottom: 5px; }
+
+        /* 画布 */
+        #viewport {
+            flex: 1; position: relative; overflow: hidden; cursor: grab;
+            background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transition: background-position 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        #viewport.grabbing { cursor: grabbing; }
+        #transform-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            transform-origin: 0 0; pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; z-index: 0; }
+
+        /* 节点 */
+        .node {
+            position: absolute; width: 380px; background: var(--node-bg); border: 1px solid var(--node-border);
+            border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+            z-index: 1; pointer-events: auto; transition: box-shadow 0.2s, border-color 0.2s, background-color 0.3s;
+        }
+        .node.selected { border-color: var(--accent-orange); box-shadow: 0 0 0 2px rgba(255, 79, 0, 0.3); }
+        .node:hover { border-color: var(--accent-orange); }
+        
+        .node-header {
+            min-height: var(--header-min-height); background: var(--node-header-bg); border-bottom: 1px solid var(--node-border);
+            border-radius: 10px 10px 0 0; padding: 8px 12px; display: flex; align-items: flex-start; justify-content: space-between; cursor: grab;
+        }
+        .node-title-input { background: transparent; border: none; color: var(--text-main); font-weight: bold; font-size: 0.95rem; outline: none; word-break: break-word; min-width: 50px; cursor: text; }
+        .node-controls { display: flex; gap: 6px; margin-top: 2px; }
+        .node-btn { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-sub); background: var(--bg-color); border: 1px solid var(--node-border); }
+        .node-btn:hover { color: var(--text-main); background: var(--node-bg); }
+        .status-dot { width: 10px; height: 10px; min-width: 10px; border-radius: 50%; background: var(--text-sub); cursor: pointer; border: 1px solid var(--node-border); margin-right: 10px; margin-top: 6px; }
+        .status-dot[data-status="done"] { background: #10b981; box-shadow: 0 0 8px #10b981; border-color: #10b981; }
+        .status-dot[data-status="doing"] { background: var(--accent-orange); box-shadow: 0 0 8px var(--accent-orange); border-color: var(--accent-orange); }
+
+        .node-body { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        .section-label { font-size: 0.7rem; color: var(--accent-orange); font-weight: bold; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .data-box {
+            background: var(--code-bg); border: 1px solid var(--node-border); border-radius: 6px; padding: 12px;
+            font-family: 'Consolas', monospace; font-size: 0.85rem; color: var(--text-main); 
+            min-height: 60px; max-height: 300px; overflow-y: auto; 
+            white-space: pre-wrap; outline: none; line-height: 1.5; cursor: text; user-select: text;
+        }
+        .prompt-box { background: rgba(255, 79, 0, 0.05); border: 1px dashed var(--accent-orange); max-height: 150px; }
+        .data-box::-webkit-scrollbar, #markdown-editor::-webkit-scrollbar { width: 6px; }
+        .data-box::-webkit-scrollbar-thumb, #markdown-editor::-webkit-scrollbar-thumb { background: var(--node-border); border-radius: 3px; }
+
+        .action-btn { background: transparent; border: 1px solid var(--accent-orange); color: var(--accent-orange); font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .action-btn:hover { background: var(--accent-orange); color: #fff; }
+        .port { width: 12px; height: 12px; border-radius: 50%; background: var(--port-color); border: 2px solid var(--node-bg); position: absolute; top: 12px; z-index: 2; }
+        .port.in { left: -7px; } .port.out { right: -7px; background: var(--accent-orange); }
+
+        #toolbar {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            background: var(--node-header-bg); padding: 8px 16px; border-radius: 50px;
+            border: 1px solid var(--node-border); display: flex; gap: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .tool-btn { background: none; border: none; color: var(--text-main); cursor: pointer; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .tool-btn:hover { color: var(--accent-orange); }
+
+        /* --- 侧边栏开关 (标签样式) --- */
+        #sidebar-toggle-tab {
+            position: absolute; /* 相对于 body 或 app-container */
+            top: 60px; /* 您圈出的位置大约在顶部下方一点 */
+            left: 0;
+            z-index: 300; /* 确保在最上层 */
+            width: 32px;
+            height: 48px;
+            background: var(--node-header-bg);
+            border: 1px solid var(--node-border);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
+        }
+        
+        /* 当侧边栏展开时，按钮跟随移动到侧边栏边缘 */
+        body:not(.sidebar-collapsed) #sidebar-toggle-tab {
+            left: var(--sidebar-width);
+        }
+        /* 当侧边栏收起时，按钮在屏幕最左侧 */
+        body.sidebar-collapsed #sidebar-toggle-tab {
+            left: 0;
+        }
+
+        #sidebar-toggle-tab:hover {
+            color: var(--accent-orange);
+            border-color: var(--accent-orange);
+        }
+
+        #viewport-info { position: fixed; bottom: 20px; right: 20px; z-index: 100; color: var(--text-sub); font-size: 0.8rem; pointer-events: none; background: var(--node-header-bg); padding: 5px 10px; border-radius: 4px; border: 1px solid var(--node-border); }
+        .toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: var(--accent-orange); color: white; padding: 8px 20px; border-radius: 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; z-index: 300; }
+        .toast.show { opacity: 1; }
+        #file-input { display: none; }
+    </style>
+</head>
+<body class="">
+
+<!-- 新的标签式开关按钮 -->
+<div id="sidebar-toggle-tab" onclick="toggleSidebar()" title="切换侧边栏">
+    <svg id="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline> <!-- 默认向左箭头 (收起状态) -->
+    </svg>
+</div>
+
+<input type="file" id="file-input" accept=".json" onchange="handleFileLoad(this)">
+
+<div id="app-container">
+    <!-- 左侧侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-tabs">
+            <div class="sidebar-tab active" onclick="switchTab('projects')">📂 项目</div>
+            <div class="sidebar-tab" onclick="switchTab('source')">📝 源码</div>
+        </div>
+        
+        <div class="sidebar-views">
+            <!-- 视图1: 项目列表 -->
+            <div id="view-projects" class="sidebar-view active">
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="搜索项目..." oninput="app.renderProjectList(this.value)">
+                </div>
+                <div class="project-list" id="project-list-container"></div>
+                <div class="sidebar-footer">
+                    <button class="tool-btn" style="width:100%; justify-content:center; background:var(--node-header-bg); border:1px solid var(--accent-orange); padding:8px; border-radius:6px; color:var(--accent-orange);" onclick="app.createNewProject()">+ 新建工作流</button>
+                    <div style="margin-top:10px;">
+                        <div class="storage-text"><span>本地存储</span><span id="storage-percent">0%</span></div>
+                        <div class="storage-bar-bg"><div class="storage-bar-fill" id="storage-bar"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图2: Markdown -->
+            <div id="view-source" class="sidebar-view">
+                <div style="padding:10px; display:flex; gap:10px; border-bottom:1px solid var(--sidebar-border);">
+                    <button class="action-btn" style="flex:1" onclick="importFromMarkdown()">⬅️ 导入画布</button>
+                    <button class="action-btn" style="flex:1" onclick="exportToMarkdown()">🔄 提取MD</button>
+                </div>
+                <textarea id="markdown-editor" spellcheck="false" placeholder="Markdown..."></textarea>
+                <div class="sidebar-footer">
+                    <button class="tool-btn" style="width:100%; justify-content:center; background:var(--bg-color); border:1px solid var(--node-border); padding:8px; border-radius:6px;" onclick="copyMarkdown()">📋 复制全部内容</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧画布 -->
+    <div id="viewport">
+        <div id="transform-layer">
+            <svg id="connections-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+            <div id="nodes-layer"></div>
+        </div>
+        
+        <div id="toolbar">
+            <span id="current-project-title" style="font-weight:bold; color:var(--accent-orange); margin-right:10px; font-size:0.9rem;">未命名项目</span>
+            <span style="color:var(--text-sub)">|</span>
+            <button class="tool-btn" onclick="toggleTheme()" title="切换主题">🌗</button>
+            <button class="tool-btn" onclick="historyManager.undo()" title="撤销 (Ctrl+Z)">↩️</button>
+            <button class="tool-btn" onclick="historyManager.redo()" title="重做 (Ctrl+Y)">↪️</button>
+            <span style="color:var(--text-sub)">|</span>
+            <button class="tool-btn" onclick="exportJSON()" title="导出备份">📤</button>
+            <button class="tool-btn" onclick="document.getElementById('file-input').click()" title="导入备份">📥</button>
+            <button class="tool-btn" onclick="resetView()" title="复位视角">👁️</button>
+            <button class="tool-btn" onclick="createNewNode()" style="color:var(--accent-orange)">+ 节点</button>
+        </div>
+        
+        <div id="viewport-info">Scale: 1.00 | Pan: 0, 0</div>
+    </div>
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+    // --- 历史记录管理器 (时光机) ---
+    class HistoryManager {
+        constructor() {
+            this.history = [];
+            this.historyIndex = -1;
+            this.limit = 50;
+            this.isInternalChange = false; // 避免撤销重做时触发新的记录
+        }
+
+        // 记录状态
+        pushState(data) {
+            if(this.isInternalChange) return;
+            
+            // 如果在中间位置做了修改，切断后面的历史
+            if (this.historyIndex < this.history.length - 1) {
+                this.history = this.history.slice(0, this.historyIndex + 1);
+            }
+            
+            // 存入副本
+            this.history.push(JSON.parse(JSON.stringify(data)));
+            this.historyIndex++;
+            
+            // 限制长度
+            if (this.history.length > this.limit) {
+                this.history.shift();
+                this.historyIndex--;
+            }
+        }
+
+        undo() {
+            if (this.historyIndex > 0) {
+                this.isInternalChange = true;
+                this.historyIndex--;
+                const state = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
+                this.restore(state);
+                this.isInternalChange = false;
+                showToast("已撤销");
+            }
+        }
+
+        redo() {
+            if (this.historyIndex < this.history.length - 1) {
+                this.isInternalChange = true;
+                this.historyIndex++;
+                const state = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
+                this.restore(state);
+                this.isInternalChange = false;
+                showToast("已重做");
+            }
+        }
+
+        restore(data) {
+            workflowData = data;
+            renderNodes();
+            drawConnections();
+            app.saveCurrent(true); // 静默保存，不触发toast
+        }
+    }
+    const historyManager = new HistoryManager();
+
+    // --- IndexedDB 存储适配器 ---
+    class IDBAdapter {
+        constructor(dbName, storeName) { this.dbName = dbName; this.storeName = storeName; this.db = null; }
+        async init() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.dbName, 1);
+                request.onerror = (e) => reject(e);
+                request.onsuccess = (e) => { this.db = e.target.result; resolve(this.db); };
+                request.onupgradeneeded = (e) => { const db = e.target.result; if (!db.objectStoreNames.contains(this.storeName)) db.createObjectStore(this.storeName, { keyPath: 'id' }); };
+            });
+        }
+        async getAll() { return new Promise((resolve) => { if(!this.db) return resolve([]); const tx = this.db.transaction([this.storeName], "readonly"); const req = tx.objectStore(this.storeName).getAll(); req.onsuccess = () => resolve(req.result || []); }); }
+        async save(item) { return new Promise((resolve, reject) => { const tx = this.db.transaction([this.storeName], "readwrite"); const req = tx.objectStore(this.storeName).put(item); req.onsuccess = () => resolve(); req.onerror = (e) => reject(e); }); }
+        async delete(id) { return new Promise((resolve) => { const tx = this.db.transaction([this.storeName], "readwrite"); tx.objectStore(this.storeName).delete(id).onsuccess = () => resolve(); }); }
+    }
+
+    // --- 应用控制器 ---
+    class AppStore {
+        constructor() {
+            this.db = new IDBAdapter('VibeCodingDB', 'projects');
+            this.projects = [];
+            this.currentProject = null;
+            this.saveTimeout = null;
+        }
+
+        async init() {
+            try {
+                await this.db.init();
+                await this.refreshList();
+                const lastId = localStorage.getItem('vibe_last_project');
+                if (lastId && this.projects.find(p => p.id === lastId)) this.loadProject(lastId);
+                else if (this.projects.length > 0) this.loadProject(this.projects[0].id);
+                else this.createNewProject(true);
+                this.updateStorageMeter();
+            } catch(e) { console.error(e); }
+        }
+
+        async refreshList() {
+            this.projects = (await this.db.getAll()).sort((a,b) => b.updatedAt - a.updatedAt);
+            this.renderProjectList();
+        }
+
+        renderProjectList(filter = "") {
+            const container = document.getElementById('project-list-container'); container.innerHTML = '';
+            this.projects.filter(p => p.title.toLowerCase().includes(filter.toLowerCase())).forEach(p => {
+                const item = document.createElement('div');
+                item.className = `project-item ${this.currentProject && this.currentProject.id === p.id ? 'active' : ''}`;
+                item.onclick = (e) => { if(!e.target.closest('.mini-btn')) this.loadProject(p.id); };
+                const date = new Date(p.updatedAt).toLocaleDateString();
+                item.innerHTML = `<div class="project-info"><div class="project-title">${p.title}</div><div class="project-date">${date} • ${p.nodes ? p.nodes.length : 0} 节点</div></div><div class="project-actions"><button class="mini-btn" onclick="app.renameProject(event, '${p.id}')" title="重命名">✏️</button><button class="mini-btn" onclick="app.deleteProject(event, '${p.id}')" title="删除">🗑️</button></div>`;
+                container.appendChild(item);
+            });
+        }
+
+        async createNewProject(isDefault = false) {
+            const defaultNodes = [{ id: 'n1', x: 100, y: 100, title: '01. Start', status: 'done', context: '新项目开始', prompt: '规划项目目标...', next: [] }];
+            const newProject = { id: `proj_${Date.now()}`, title: isDefault ? '我的第一个工作流' : `未命名工作流 ${new Date().toLocaleTimeString()}`, updatedAt: Date.now(), nodes: defaultNodes, panX: 0, panY: 0, scale: 1 };
+            await this.db.save(newProject); await this.refreshList(); this.loadProject(newProject.id);
+        }
+
+        loadProject(id) {
+            const project = this.projects.find(p => p.id === id); if(!project) return;
+            this.currentProject = project; localStorage.setItem('vibe_last_project', id);
+            document.getElementById('current-project-title').innerText = project.title; this.renderProjectList();
+            workflowData = JSON.parse(JSON.stringify(project.nodes || [])); // Deep copy
+            state.panX = project.panX || 0; state.panY = project.panY || 0; state.scale = project.scale || 1;
+            
+            // 初始化历史记录
+            historyManager.history = [];
+            historyManager.historyIndex = -1;
+            historyManager.pushState(workflowData);
+
+            renderNodes(); updateTransform();
+            document.getElementById('markdown-editor').value = '';
+            if(window.innerWidth < 800) toggleSidebar();
+        }
+
+        async saveCurrent(silent = false) {
+            if(!this.currentProject) return;
+            this.currentProject.nodes = workflowData;
+            this.currentProject.panX = state.panX;
+            this.currentProject.panY = state.panY;
+            this.currentProject.scale = state.scale;
+            this.currentProject.updatedAt = Date.now();
+            await this.db.save(this.currentProject);
+            if(!silent) showToast("已自动保存");
+            this.updateStorageMeter();
+        }
+
+        requestSave(silent = false) {
+            if(this.saveTimeout) clearTimeout(this.saveTimeout);
+            this.saveTimeout = setTimeout(() => { this.saveCurrent(silent); this.refreshList(); }, 800);
+        }
+
+        async deleteProject(e, id) { e.stopPropagation(); if(!confirm("确定要删除这个项目吗？无法恢复。")) return; await this.db.delete(id); await this.refreshList(); if(this.currentProject && this.currentProject.id === id) { if(this.projects.length > 0) this.loadProject(this.projects[0].id); else this.createNewProject(true); } }
+        async renameProject(e, id) { e.stopPropagation(); const p = this.projects.find(x => x.id === id); const newName = prompt("重命名项目:", p.title); if(newName) { p.title = newName; p.updatedAt = Date.now(); await this.db.save(p); this.refreshList(); if(this.currentProject.id === id) document.getElementById('current-project-title').innerText = newName; } }
+        
+        updateStorageMeter() {
+            // Placebo visual feedback
+            const visualPercent = Math.min(100, Math.max(1, this.projects.length * 2)); 
+            document.getElementById('storage-bar').style.width = visualPercent + "%";
+            document.getElementById('storage-percent').innerText = visualPercent + "% (模拟)";
+        }
+    }
+
+    const app = new AppStore();
+
+    // --- 核心逻辑 ---
+    let workflowData = [];
+    const state = { scale: 1, panX: 0, panY: 0, isDraggingCanvas: false, lastMouseX: 0, lastMouseY: 0 };
+    const transformLayer = document.getElementById('transform-layer');
+    const viewport = document.getElementById('viewport');
+
+    function updateTransform() {
+        transformLayer.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
+        viewport.style.backgroundPosition = `${state.panX}px ${state.panY}px`;
+        viewport.style.backgroundSize = `${40 * state.scale}px ${40 * state.scale}px`;
+        document.getElementById('viewport-info').innerText = `Scale: ${state.scale.toFixed(2)} | Pan: ${Math.round(state.panX)}, ${Math.round(state.panY)}`;
+    }
+
+    // 画布交互 (静默保存)
+    viewport.addEventListener('mousedown', e => {
+        if(e.target.closest('.node') || e.target.closest('#toolbar')) return;
+        state.isDraggingCanvas = true; state.lastMouseX = e.clientX; state.lastMouseY = e.clientY; viewport.classList.add('grabbing');
+    });
+    window.addEventListener('mousemove', e => {
+        if(state.isDraggingCanvas) {
+            const dx = e.clientX - state.lastMouseX; const dy = e.clientY - state.lastMouseY;
+            state.panX += dx; state.panY += dy; state.lastMouseX = e.clientX; state.lastMouseY = e.clientY; updateTransform();
+        }
+    });
+    window.addEventListener('mouseup', () => { 
+        if(state.isDraggingCanvas) app.requestSave(true); // 静默保存视图状态
+        state.isDraggingCanvas = false; viewport.classList.remove('grabbing'); 
+    });
+    viewport.addEventListener('wheel', e => {
+        const box = e.target.closest('.data-box');
+        if (box && (box.scrollHeight > box.clientHeight)) { e.stopPropagation(); return; }
+        e.preventDefault();
+        if(e.ctrlKey) { state.scale = Math.max(0.1, Math.min(3, state.scale + (e.deltaY < 0 ? 0.1 : -0.1))); } 
+        else { state.panX -= e.deltaX; state.panY -= e.deltaY; }
+        updateTransform();
+        app.requestSave(true); // 静默保存视图状态
+    }, { passive: false });
+
+    // 节点拖拽
+    let dragNodeId = null, dragStartX = 0, dragStartY = 0, dragMouseX = 0, dragMouseY = 0;
+    function initDrag(el) {
+        const header = el.querySelector('.node-header');
+        header.addEventListener('mousedown', e => {
+            if(e.target.closest('.node-btn') || e.target.closest('.node-title-input') || e.target.closest('.status-dot')) return;
+            dragNodeId = el.id;
+            // 记录拖拽前状态，用于撤销
+            historyManager.pushState(workflowData);
+            
+            const node = workflowData.find(n => n.id === dragNodeId);
+            dragStartX = node.x; dragStartY = node.y; dragMouseX = e.clientX; dragMouseY = e.clientY;
+            el.style.zIndex = 100; e.stopPropagation();
+        });
+    }
+    window.addEventListener('mousemove', e => {
+        if(dragNodeId) {
+            const dx = (e.clientX - dragMouseX) / state.scale;
+            const dy = (e.clientY - dragMouseY) / state.scale;
+            const node = workflowData.find(n => n.id === dragNodeId);
+            if(node) { node.x = dragStartX + dx; node.y = dragStartY + dy; }
+            const el = document.getElementById(dragNodeId);
+            el.style.left = node.x + 'px'; el.style.top = node.y + 'px';
+            drawConnections();
+        }
+    });
+    window.addEventListener('mouseup', () => { 
+        if(dragNodeId) {
+            document.getElementById(dragNodeId).style.zIndex = 1; 
+            app.requestSave(); // 显式保存
+        }
+        dragNodeId = null; 
+    });
+
+    // --- 数据修改 (带历史记录) ---
+    function updateData(id, f, v) { 
+        // 这里的 oninput 触发频率高，我们在 onblur 或 debounce 中记录历史更好
+        // 简化版：这里只更新数据，历史记录在 focus 时或其他方式处理？
+        // 为了体验，我们直接更新数据，保存由 requestSave 防抖处理。
+        // 但为了 Undo，我们需要在修改前记录。这里是一个简化的策略：
+        // 文本框聚焦时记录一次？或者简单的防抖记录？
+        // 更好的方式：在 contenteditable 的 focus 事件中记录初始值，blur 时如果变了再 pushState。
+        // 由于 contenteditable 比较特殊，这里简化处理：
+        // 每次修改都更新数据，Save 防抖。Undo 需要快照。
+        // 我们改为在 onfocus 中不做事，在 oninput 开始时如果没记录过就记录？
+        // 实际上，文本编辑的 Undo 最好依赖浏览器原生 Ctrl+Z。
+        // 我们这里只负责节点结构的 Undo。
+        
+        const n = workflowData.find(x => x.id === id); 
+        if(n && n[f] !== v) { 
+            n[f] = v; 
+            app.requestSave(); 
+        } 
+    }
+    
+    // 专门为文本框添加 focus 监听来记录 Undo 状态
+    function setupEditableListeners(el, id) {
+        el.addEventListener('focus', () => {
+            historyManager.pushState(workflowData);
+        });
+    }
+
+    function cycleStatus(id) { 
+        historyManager.pushState(workflowData);
+        const n = workflowData.find(x => x.id === id); const s = ['todo','doing','done']; 
+        n.status = s[(s.indexOf(n.status)+1)%3]; renderNodes(); app.requestSave(); 
+    }
+    function createNewNode() { 
+        historyManager.pushState(workflowData);
+        const vx = (viewport.offsetWidth/2 - state.panX)/state.scale; 
+        const vy = (viewport.offsetHeight/2 - state.panY)/state.scale;
+        workflowData.push({ id:`n-${Date.now()}`, x:vx, y:vy, title:'New Node', status:'todo', context:'', prompt:'', next:[] }); 
+        renderNodes(); app.requestSave(); 
+    }
+    function addNextNode(pid) { 
+        historyManager.pushState(workflowData);
+        const p = workflowData.find(n => n.id === pid); 
+        const newId = `n-${Date.now()}`;
+        workflowData.push({ id:newId, x:p.x+450, y:p.y, title:'Next Step', status:'todo', context:'', prompt:'', next:[] });
+        if(!p.next) p.next=[]; p.next.push(newId); renderNodes(); app.requestSave();
+    }
+    function addSiblingNode(pid) {
+        historyManager.pushState(workflowData);
+        const p = workflowData.find(n => n.id === pid);
+        const parents = workflowData.filter(n => n.next && n.next.includes(pid));
+        const newId = `n-${Date.now()}`;
+        workflowData.push({ id:newId, x:p.x, y:p.y+350, title:'Branch', status:'todo', context:'', prompt:'', next:[] });
+        parents.forEach(par => par.next.push(newId)); renderNodes(); app.requestSave();
+    }
+    function deleteNode(id) {
+        if(confirm('删除?')) {
+            historyManager.pushState(workflowData);
+            workflowData = workflowData.filter(n => n.id !== id);
+            workflowData.forEach(n => { if(n.next) n.next = n.next.filter(x => x !== id); });
+            renderNodes(); app.requestSave();
+        }
+    }
+
+    // --- 渲染逻辑 ---
+    function renderNodes() {
+        const container = document.getElementById('nodes-layer');
+        container.innerHTML = '';
+        workflowData.forEach(data => {
+            const nodeEl = document.createElement('div');
+            nodeEl.className = 'node'; nodeEl.id = data.id; nodeEl.style.left = data.x + 'px'; nodeEl.style.top = data.y + 'px';
+            nodeEl.innerHTML = `
+                <div class="node-header">
+                    <div class="node-title-box">
+                        <div class="status-dot" data-status="${data.status}" onclick="cycleStatus('${data.id}')"></div>
+                        <span class="node-title-input" contenteditable="true" onfocus="setupEditableListeners(this, '${data.id}')" onblur="updateData('${data.id}', 'title', this.innerText)">${data.title}</span>
+                    </div>
+                    <div class="node-controls">
+                        <div class="node-btn add-branch" onclick="addSiblingNode('${data.id}')">🔀</div>
+                        <div class="node-btn add-next" onclick="addNextNode('${data.id}')">➕</div>
+                        <div class="node-btn del" onclick="deleteNode('${data.id}')">✕</div>
+                    </div>
+                </div>
+                <div class="port in"></div><div class="port out"></div>
+                <div class="node-body">
+                    <div>
+                        <div class="section-label">CONTEXT / 交付物</div>
+                        <div class="data-box" contenteditable="true" onfocus="setupEditableListeners(this, '${data.id}')" oninput="updateData('${data.id}', 'context', this.innerText)">${data.context}</div>
+                    </div>
+                    <div>
+                        <div class="section-label">NEXT PROMPT / 指令 <button class="action-btn" onclick="copyText(this)">复制</button></div>
+                        <div class="data-box prompt-box" contenteditable="true" onfocus="setupEditableListeners(this, '${data.id}')" oninput="updateData('${data.id}', 'prompt', this.innerText)">${data.prompt}</div>
+                    </div>
+                </div>`;
+            initDrag(nodeEl); container.appendChild(nodeEl);
+        });
+        drawConnections();
+    }
+
+    function drawConnections() {
+        const svg = document.getElementById('connections-layer'); svg.innerHTML = '';
+        const isLight = document.body.classList.contains('light-theme');
+        const color = isLight ? '#9ca3af' : '#555';
+        workflowData.forEach(src => {
+            if (src.next && src.next.length) src.next.forEach(tid => {
+                const tgt = workflowData.find(n => n.id === tid);
+                if (tgt) {
+                    const el1 = document.getElementById(src.id); const el2 = document.getElementById(tgt.id);
+                    if(!el1 || !el2) return;
+                    const startX = src.x + 380; const startY = src.y + 18; const endX = tgt.x; const endY = tgt.y + 18;
+                    const d = `M ${startX} ${startY} C ${startX + (endX-startX)/2} ${startY}, ${endX - (endX-startX)/2} ${endY}, ${endX} ${endY}`;
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', d); path.setAttribute('stroke', color); path.setAttribute('stroke-width', '2'); path.setAttribute('fill', 'none');
+                    svg.appendChild(path);
+                }
+            });
+        });
+    }
+
+    // --- UI 功能 ---
+    function switchTab(tab) {
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.sidebar-view').forEach(v => v.classList.remove('active'));
+        if(tab === 'projects') {
+            document.querySelectorAll('.sidebar-tab')[0].classList.add('active');
+            document.getElementById('view-projects').classList.add('active');
+        } else {
+            document.querySelectorAll('.sidebar-tab')[1].classList.add('active');
+            document.getElementById('view-source').classList.add('active');
+            exportToMarkdown();
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const body = document.body;
+        const icon = document.getElementById('toggle-icon');
+        
+        sidebar.classList.toggle('collapsed');
+        body.classList.toggle('sidebar-collapsed');
+        
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        const sidebarWidth = 360; 
+        
+        // 智能避让逻辑
+        if(isCollapsed) {
+            state.panX += sidebarWidth / state.scale;
+            // 改变图标方向 ->
+            icon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>'; 
+        } else {
+            // 检查是否遮挡
+            let minX = Infinity;
+            if(workflowData.length) workflowData.forEach(n=> minX = Math.min(minX, n.x)); else minX=0;
+            const screenX = minX * state.scale + state.panX;
+            if(screenX < sidebarWidth + 50) state.panX = 50 - minX * state.scale; 
+            else state.panX -= sidebarWidth / state.scale;
+            // 改变图标方向 <-
+            icon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+        }
+        updateTransform();
+        app.requestSave(true);
+    }
+
+    function toggleTheme() { 
+        document.body.classList.toggle('light-theme'); 
+        localStorage.setItem('vibe_theme', document.body.classList.contains('light-theme') ? 'light' : 'dark'); 
+        drawConnections(); 
+    }
+    
+    function resetView() { state.scale=1; state.panX=0; state.panY=0; updateTransform(); app.requestSave(true); }
+    function copyText(btn) { navigator.clipboard.writeText(btn.parentElement.nextElementSibling.innerText).then(() => showToast('已复制')); }
+    function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
+    
+    // Markdown / JSON
+    function exportJSON() {
+        if(!app.currentProject) return;
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(app.currentProject, null, 2));
+        const a = document.createElement('a'); a.href = dataStr; a.download = `${app.currentProject.title}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+    function handleFileLoad(input) { const r = new FileReader(); r.onload = e => { try { const p = JSON.parse(e.target.result); p.id=`proj_${Date.now()}`; app.db.save(p).then(()=>app.refreshList().then(()=>app.loadProject(p.id))); } catch(err){ alert('格式错误'); } }; if(input.files[0]) r.readAsText(input.files[0]); input.value=''; }
+    function parseMarkdown(md) {
+        const lines = md.split('\n'); const nodes = []; let curr = null; let sect = null;
+        lines.forEach(l => {
+            const m = l.match(/^##\s+(.+?)\s*\[(\w+)\]/);
+            if (m) { if (curr) nodes.push(curr); curr = { id:`n-${Math.random().toString(36).substr(2,9)}`, x:0, y:0, title:m[1], status:m[2].toLowerCase(), context:'', prompt:'', next:[] }; sect=null; return; }
+            if (l.startsWith('### PROJ') || l.startsWith('### AI')) { sect='context'; return; }
+            if (l.startsWith('### NEXT')) { sect='prompt'; return; }
+            if (!l.startsWith('---') && curr && sect) curr[sect] += l + '\n';
+        });
+        if (curr) nodes.push(curr);
+        for(let i=0; i<nodes.length-1; i++) nodes[i].next = [nodes[i+1].id];
+        return nodes;
+    }
+    function importFromMarkdown() {
+        if(confirm('导入将覆盖当前画布，确定？')) {
+            const nodes = parseMarkdown(document.getElementById('markdown-editor').value);
+            let sx=100; nodes.forEach(n => { n.x=sx; n.y=100; sx+=450; });
+            workflowData = nodes; 
+            historyManager.pushState(workflowData); // 记录导入操作
+            renderNodes(); 
+            app.saveCurrent(); 
+            switchTab('projects');
+        }
+    }
+    function exportToMarkdown() {
+        let md = `# ${app.currentProject ? app.currentProject.title : 'Workflow'}\n\n`;
+        workflowData.forEach(n => md += `## ${n.title} [${n.status.toUpperCase()}]\n### PROJECT CONTEXT\n${n.context.trim()}\n### NEXT PROMPT\n${n.prompt.trim()}\n\n---\n\n`);
+        document.getElementById('markdown-editor').value = md;
+    }
+    function copyMarkdown() { exportToMarkdown(); const el = document.getElementById('markdown-editor'); el.select(); navigator.clipboard.writeText(el.value).then(()=>showToast('已复制')); }
+
+    // 快捷键支持 Undo/Redo
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            e.preventDefault();
+            historyManager.undo();
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+            e.preventDefault();
+            historyManager.redo();
+        }
+    });
+
+    // Init
+    const th = localStorage.getItem('vibe_theme'); if(th==='light') document.body.classList.add('light-theme');
+    app.init();
+    window.addEventListener('resize', drawConnections);
+
+</script>
+</body>
+</html>
