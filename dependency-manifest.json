@@ -1,0 +1,37 @@
+[
+  {
+    "name": "lz-string",
+    "version": "1.5.0",
+    "npm_url": "https://registry.npmjs.org/lz-string/-/lz-string-1.5.0.tgz",
+    "archive_sha256": "ad640cf79fc54bc8035a66edd33974f1334db9ba079c8b845f13e5d54c5e011b",
+    "script_sha256": "95f4d1cbf099f57161b664bc048426ec3df92637801a4c79116e83315aa787e7"
+  },
+  {
+    "name": "html2canvas",
+    "version": "1.4.1",
+    "npm_url": "https://registry.npmjs.org/html2canvas/-/html2canvas-1.4.1.tgz",
+    "archive_sha256": "542536a762933dadf7605b275ae096a31734ab3cf488069b7d75523c309f5b12",
+    "script_sha256": "e87e550794322e574a1fda0c1549a3c70dae5a93d9113417a429016838eab8cb"
+  },
+  {
+    "name": "marked",
+    "version": "18.1.1",
+    "npm_url": "https://registry.npmjs.org/marked/-/marked-18.1.1.tgz",
+    "archive_sha256": "c05b3cff890d35e1208805a01fd0501571d09a81e725de0559b10bdfae90adad",
+    "script_sha256": "b82b9334406d8bdd16b6236c08de1cb65b2a859873ca9503d9cc0b292ca3c12a"
+  },
+  {
+    "name": "dompurify",
+    "version": "3.4.17",
+    "npm_url": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.17.tgz",
+    "archive_sha256": "056cbdae276897208b88c21d1d779adfa09ad7be488a2f510a28e900d3bbffe7",
+    "script_sha256": "cd37898f9782adf54820c413191b5691803f0f137c799d6edcfd38523b4c2c31"
+  },
+  {
+    "name": "diff-match-patch",
+    "version": "1.0.5",
+    "npm_url": "https://registry.npmjs.org/diff-match-patch/-/diff-match-patch-1.0.5.tgz",
+    "archive_sha256": "ea56d44af647249ce8c1120464f48f66bbb206820e06903d915b3bfb29bc65ab",
+    "script_sha256": "7cead2c7cb3e4ff5c02e173cd6b81d22005e67c47ac2ce28e4b5c73d9ffcfdb2"
+  }
+]
