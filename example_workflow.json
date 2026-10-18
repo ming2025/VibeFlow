@@ -1,0 +1,57 @@
+{
+  "id": "vibeflow_quickstart_v34",
+  "title": "快速开始：比较两个方案",
+  "description": "公开合成示例，不含真实会话。",
+  "panX": 40,
+  "panY": 80,
+  "scale": 0.65,
+  "nodes": [
+    {
+      "id": "define",
+      "x": 20,
+      "y": 200,
+      "title": "01. [行动] 明确目标",
+      "status": "todo",
+      "context": "为一个小型项目选择可执行路线。",
+      "prompt": "列出目标、约束和验收条件，然后分别探索方案 A 与 B。",
+      "next": [
+        "option_a",
+        "option_b"
+      ]
+    },
+    {
+      "id": "option_a",
+      "x": 600,
+      "y": 30,
+      "title": "02-A. [行动] 方案 A",
+      "status": "todo",
+      "context": "基于上一节点的目标与约束。",
+      "prompt": "提出一条成本较低、能快速验证的路线，说明收益和代价。",
+      "next": [
+        "compare"
+      ]
+    },
+    {
+      "id": "option_b",
+      "x": 600,
+      "y": 430,
+      "title": "02-B. [行动] 方案 B",
+      "status": "todo",
+      "context": "基于上一节点的同一组目标与约束。",
+      "prompt": "提出一条与方案 A 明显不同的路线，说明收益和代价。",
+      "next": [
+        "compare"
+      ]
+    },
+    {
+      "id": "compare",
+      "x": 1180,
+      "y": 200,
+      "title": "03. [选择] 比较与收敛",
+      "status": "todo",
+      "context": "对比 A 与 B。",
+      "prompt": "按验收条件比较两条路线，选择一种并列出下一步。",
+      "next": []
+    }
+  ]
+}

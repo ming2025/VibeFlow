@@ -1,0 +1,57 @@
+{
+  "id": "vibeflow_public_demo",
+  "title": "VibeFlow 双版本公开示例",
+  "updatedAt": "2026-10-18T04:00:00.000Z",
+  "versions": [
+    {
+      "id": "public_version_1",
+      "name": "V1.0 · 初步方案",
+      "turns": [
+        {
+          "id": "public_prompt_1",
+          "type": "prompt",
+          "role": "prompt",
+          "timestamp": "2026-10-18T04:00:00.000Z",
+          "content": "<p>为社区读书活动提出一个简短方案。</p>",
+          "remarks": ""
+        },
+        {
+          "id": "public_response_1",
+          "type": "ai",
+          "role": "ai",
+          "timestamp": "2026-10-18T04:00:00.000Z",
+          "content": "<p>先确定参与者、预算与活动目标，再选择一项可以小范围验证的活动。</p>",
+          "remarks": "公开合成内容，仅用于演示。"
+        }
+      ],
+      "draft": {
+        "prompt": ""
+      }
+    },
+    {
+      "id": "public_version_2",
+      "name": "V1.1 · 对照方案",
+      "turns": [
+        {
+          "id": "public_prompt_2",
+          "type": "prompt",
+          "role": "prompt",
+          "timestamp": "2026-10-18T04:00:00.000Z",
+          "content": "<p>请对初步方案提出一个不同方向，并说明取舍。</p>",
+          "remarks": ""
+        },
+        {
+          "id": "public_response_2",
+          "type": "ai",
+          "role": "ai",
+          "timestamp": "2026-10-18T04:00:00.000Z",
+          "content": "<p>方案 B 将大型活动改为小组共读：组织成本更低，但传播范围较小。先邀请少量读者试办，再收集反馈。</p>",
+          "remarks": "公开合成内容，仅用于演示。"
+        }
+      ],
+      "draft": {
+        "prompt": "下一步：列出验收条件。"
+      }
+    }
+  ]
+}
